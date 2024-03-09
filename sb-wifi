@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Color settings
+DMENU_NORM_FG="#d9a656"
+DMENU_NORM_BG="#282828"
+DMENU_SEL_FG="#d9a05b"
+DMENU_SEL_BG="#282828"
+
+# Check if clicked
+if [ "${BLOCK_BUTTON}" == "1" ]; then
+    CHOICES="Turn Wi-Fi On\nTurn Wi-Fi Off\nConnect to Network"
+
+    # Show the options in dmenu
+    CHOICE=$(echo -e "$CHOICES" | dmenu -i -l 10 -nb "$DMENU_NORM_BG" -nf "$DMENU_NORM_FG" -sb "$DMENU_SEL_BG" -sf "$DMENU_SEL_FG" -p "Wi-Fi Options: ")
+
+    case "$CHOICE" in
+        "Turn Wi-Fi On")
+            nmcli radio wifi on
+            ;;
+        "Turn Wi-Fi Off")
+            nmcli radio wifi off
+            ;;
+        "Connect to Network")
+            # Get the list of SSIDs
+            SSIDS=$(nmcli device wifi list | awk 'NR>1 {print $1}')
+
+            # Display the SSIDs in dmenu and get the selected one
+            SSID=$(echo "$SSIDS" | dmenu -i -l 10 -nb "$DMENU_NORM_BG" -nf "$DMENU_NORM_FG" -sb "$DMENU_SEL_BG" -sf "$DMENU_SEL_FG" -p "Select Network: ")
+
+            # Connect to the selected network
+            if [ -n "$SSID" ]; then
+                PASSWORD=$(echo "" | dmenu -P -p "Enter password: ")
+                nmcli device wifi connect "$SSID" password "$PASSWORD"
+            else
+                notify-send "No network selected."
+            fi
+            ;;
+    esac
+fi
+
+# Check the Wi-Fi connection status
+WIFI_STATUS=$(nmcli -t -f device,state dev | awk -F: '$1 ~ /wlan0/ {print $2}')
+if [ "$WIFI_STATUS" == "connected" ]; then
+    # Display wifi connected icon
+    echo -n "󰖩"
+else
+    # Display wifi disconnected icon
+    echo -n "󰤯"
+fi
+
